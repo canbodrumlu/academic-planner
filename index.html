@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Course Tracker - UW Political Science Ph.D.</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
+    h1, h2 { color: #4B2E83; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+    th, td { border: 1px solid #ddd; padding: 10px; }
+    th { background-color: #eee; }
+    td.status { cursor: pointer; text-align: center; }
+    .not-taken { background-color: #f8d7da; }
+    .planned { background-color: #fff3cd; }
+    .completed { background-color: #d4edda; }
+    .manual-input { background-color: #e7f1ff; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>UW Political Science Ph.D. Course Tracker</h1>
+  <p>Click the status cells to toggle between "Not Taken", "Planned", and "Completed". Your progress will be saved automatically.</p>
+
+  <div id="tables"></div>
+
+  <script>
+    const fields = {
+      "Comparative Politics": [
+        ["POL S 505: Comparative Politics Core", "Required core"],
+        ["POL S 542: State & Society", "Elective"],
+        ["POL S 544: Problems in Comparative Government", "Elective"],
+        ["POL S 547: Politics of Reform", "Elective"],
+        ["POL S 548: Comparative Political Parties", "Elective"],
+        ["POL S 549: Problems of Political Development", "Elective"],
+        ["POL S 565: Special Topics in Public Law", "Elective"],
+        ["POL S 566: Comparative Law and Politics", "Elective"],
+        ["POL S 572: Electoral Systems", "Elective"]
+      ],
+      "Political Economy": [
+        ["POL S 583: Economic Theories of Politics", "Required Foundation"],
+        ["POL S 522: International Political Economy", "Required Foundation"],
+        ["POL S 584: Comparative Political Economy", "Required Foundation"],
+        ["POL S 582: Institutional Analysis", "Specialized"],
+        ["POL S 586: Topics in IPE", "Specialized"],
+        ["POL S 588: Topics in Comp. Political Economy", "Specialized"],
+        ["POL S 589: Special Topics in Political Economy", "Specialized"]
+      ],
+      "Political Methodology": [
+        ["POL S 500: Research Design", "Required"],
+        ["POL S 501: Advanced Research Design", "Required"],
+        ["POL S 503: Advanced Quantitative Methods", "Required"],
+        ["POL S 502: Qualitative Methods", "Qual/Mixed Option"],
+        ["POL S 504: Multi-Method Field Research", "Qual/Mixed Option"],
+        ["POL S/CS&SS 510: Maximum Likelihood Estimation", "Elective"],
+        ["CS&SS 560: Hierarchical Models", "Elective"],
+        ["CS&SS 564: Bayesian Statistics", "Elective"]
+      ]
+    };
+
+    const states = ["Not Taken", "Planned", "Completed"];
+    const classes = ["not-taken", "planned", "completed"];
+
+    function toggleStatus(cell, key) {
+      let current = states.indexOf(cell.innerText);
+      let next = (current + 1) % states.length;
+      cell.innerText = states[next];
+      classes.forEach(cls => cell.classList.remove(cls));
+      cell.classList.add(classes[next]);
+      localStorage.setItem(key, states[next]);
+    }
+
+    function renderTable(fieldName, courses) {
+      let tableId = fieldName.replace(/\s+/g, '_');
+      let html = `<h2>${fieldName}</h2><table><tr><th>Course</th><th>Status</th><th>Notes</th></tr>`;
+      courses.forEach(([course, note], idx) => {
+        let key = `${fieldName}-${course}`;
+        let savedStatus = localStorage.getItem(key) || "Not Taken";
+        let cls = classes[states.indexOf(savedStatus)];
+        html += `<tr><td>${course}</td><td class="status ${cls}" onclick="toggleStatus(this, '${key}')">${savedStatus}</td><td>${note}</td></tr>`;
+      });
+      html += `</table>
+        <button onclick="addRow('${tableId}')">Add Course</button>
+        <table id="${tableId}_custom"><tr><th>Course</th><th>Status</th><th>Notes</th></tr></table>`;
+      return html;
+    }
+
+    function addRow(tableId) {
+      const table = document.getElementById(tableId + "_custom");
+      const row = table.insertRow();
+      const c1 = row.insertCell(0);
+      const c2 = row.insertCell(1);
+      const c3 = row.insertCell(2);
+      c1.contentEditable = true;
+      c3.contentEditable = true;
+      c2.className = "status not-taken";
+      c2.innerText = "Not Taken";
+      c2.onclick = function () { toggleStatus(c2, `${tableId}-custom-${Date.now()}`); };
+    }
+
+    let output = "";
+    for (let field in fields) {
+      output += renderTable(field, fields[field]);
+    }
+    document.getElementById("tables").innerHTML = output;
+  </script>
+</body>
+</html>
