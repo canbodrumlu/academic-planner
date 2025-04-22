@@ -16,6 +16,8 @@
     .completed { background-color: #d4edda; }
     .manual-input { background-color: #e7f1ff; }
     button { margin-top: 10px; }
+    select { width: 100%; }
+    .remove-btn { background-color: red; color: white; border: none; padding: 5px 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -72,30 +74,57 @@
 
     function renderTable(fieldName, courses) {
       let tableId = fieldName.replace(/\s+/g, '_');
-      let html = `<h2>${fieldName}</h2><table><tr><th>Course</th><th>Status</th><th>Notes</th></tr>`;
-      courses.forEach(([course, note], idx) => {
+      let html = `<h2>${fieldName}</h2><table><tr><th>Course</th><th>Status</th><th>Notes</th><th>Field</th><th></th></tr>`;
+      courses.forEach(([course, note]) => {
         let key = `${fieldName}-${course}`;
         let savedStatus = localStorage.getItem(key) || "Not Taken";
         let cls = classes[states.indexOf(savedStatus)];
-        html += `<tr><td>${course}</td><td class="status ${cls}" onclick="toggleStatus(this, '${key}')">${savedStatus}</td><td>${note}</td></tr>`;
+        html += `<tr>
+          <td>${course}</td>
+          <td class="status ${cls}" onclick="toggleStatus(this, '${key}')">${savedStatus}</td>
+          <td>${note}</td>
+          <td>
+            <select onchange="changeCategory(this, '${course}', '${note}', '${key}')">
+              ${Object.keys(fields).map(f => `<option value='${f}' ${f === fieldName ? "selected" : ""}>${f}</option>`).join('')}
+            </select>
+          </td>
+          <td></td>
+        </tr>`;
       });
       html += `</table>
-        <button onclick="addRow('${tableId}')">Add Course</button>
-        <table id="${tableId}_custom"><tr><th>Course</th><th>Status</th><th>Notes</th></tr></table>`;
+        <button onclick="addRow('${tableId}', '${fieldName}')">Add Course</button>
+        <table id="${tableId}_custom"><tr><th>Course</th><th>Status</th><th>Notes</th><th>Field</th><th>Remove</th></tr></table>`;
       return html;
     }
 
-    function addRow(tableId) {
+    function addRow(tableId, fieldName) {
       const table = document.getElementById(tableId + "_custom");
       const row = table.insertRow();
-      const c1 = row.insertCell(0);
-      const c2 = row.insertCell(1);
-      const c3 = row.insertCell(2);
-      c1.contentEditable = true;
-      c3.contentEditable = true;
-      c2.className = "status not-taken";
-      c2.innerText = "Not Taken";
-      c2.onclick = function () { toggleStatus(c2, `${tableId}-custom-${Date.now()}`); };
+      const id = Date.now();
+      row.innerHTML = `
+        <td contenteditable="true" class="manual-input">Enter Course Name</td>
+        <td class="status not-taken" onclick="toggleStatus(this, '${fieldName}-custom-${id}')">Not Taken</td>
+        <td contenteditable="true" class="manual-input">Custom notes</td>
+        <td>
+          <select onchange="changeManualCategory(this, this.closest('tr'))">
+            ${Object.keys(fields).map(f => `<option value='${f}' ${f === fieldName ? "selected" : ""}>${f}</option>`).join('')}
+          </select>
+        </td>
+        <td><button class="remove-btn" onclick="this.closest('tr').remove()">X</button></td>
+      `;
+    }
+
+    function changeCategory(select, course, note, oldKey) {
+      const newField = select.value;
+      if (!fields[newField]) fields[newField] = [];
+      fields[newField].push([course, note]);
+      delete localStorage[oldKey];
+      location.reload();
+    }
+
+    function changeManualCategory(select, row) {
+      const newField = select.value.replace(/\s+/g, '_') + "_custom";
+      document.getElementById(newField).appendChild(row);
     }
 
     let output = "";
