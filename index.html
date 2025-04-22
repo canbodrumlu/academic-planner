@@ -27,7 +27,7 @@
   <div id="tables"></div>
 
   <script>
-    const fields = {
+    let fields = JSON.parse(localStorage.getItem('fields')) || {
       "Comparative Politics": [
         ["POL S 505: Comparative Politics Core", "Required core"],
         ["POL S 542: State & Society", "Elective"],
@@ -72,29 +72,19 @@
       localStorage.setItem(key, states[next]);
     }
 
-    function renderTable(fieldName, courses) {
-      let tableId = fieldName.replace(/\s+/g, '_');
-      let html = `<h2>${fieldName}</h2><table><tr><th>Course</th><th>Status</th><th>Notes</th><th>Field</th><th></th></tr>`;
-      courses.forEach(([course, note]) => {
-        let key = `${fieldName}-${course}`;
-        let savedStatus = localStorage.getItem(key) || "Not Taken";
-        let cls = classes[states.indexOf(savedStatus)];
-        html += `<tr>
-          <td>${course}</td>
-          <td class="status ${cls}" onclick="toggleStatus(this, '${key}')">${savedStatus}</td>
-          <td>${note}</td>
-          <td>
-            <select onchange="changeCategory(this, '${course}', '${note}', '${key}')">
-              ${Object.keys(fields).map(f => `<option value='${f}' ${f === fieldName ? "selected" : ""}>${f}</option>`).join('')}
-            </select>
-          </td>
-          <td></td>
-        </tr>`;
-      });
-      html += `</table>
-        <button onclick="addRow('${tableId}', '${fieldName}')">Add Course</button>
-        <table id="${tableId}_custom"><tr><th>Course</th><th>Status</th><th>Notes</th><th>Field</th><th>Remove</th></tr></table>`;
-      return html;
+    function changeCategory(select, course, note, currentField) {
+      const newField = select.value;
+      if (newField === currentField) return;
+      fields[currentField] = fields[currentField].filter(item => item[0] !== course);
+      if (!fields[newField]) fields[newField] = [];
+      fields[newField].push([course, note]);
+      localStorage.setItem("fields", JSON.stringify(fields));
+      location.reload();
+    }
+
+    function changeManualCategory(select, row) {
+      const newField = select.value.replace(/\s+/g, '_') + "_custom";
+      document.getElementById(newField).appendChild(row);
     }
 
     function addRow(tableId, fieldName) {
@@ -114,17 +104,29 @@
       `;
     }
 
-    function changeCategory(select, course, note, oldKey) {
-      const newField = select.value;
-      if (!fields[newField]) fields[newField] = [];
-      fields[newField].push([course, note]);
-      delete localStorage[oldKey];
-      location.reload();
-    }
-
-    function changeManualCategory(select, row) {
-      const newField = select.value.replace(/\s+/g, '_') + "_custom";
-      document.getElementById(newField).appendChild(row);
+    function renderTable(fieldName, courses) {
+      let tableId = fieldName.replace(/\s+/g, '_');
+      let html = `<h2>${fieldName}</h2><table><tr><th>Course</th><th>Status</th><th>Notes</th><th>Field</th><th></th></tr>`;
+      courses.forEach(([course, note]) => {
+        let key = `${fieldName}-${course}`;
+        let savedStatus = localStorage.getItem(key) || "Not Taken";
+        let cls = classes[states.indexOf(savedStatus)];
+        html += `<tr>
+          <td>${course}</td>
+          <td class="status ${cls}" onclick="toggleStatus(this, '${key}')">${savedStatus}</td>
+          <td>${note}</td>
+          <td>
+            <select onchange="changeCategory(this, '${course}', '${note}', '${fieldName}')">
+              ${Object.keys(fields).map(f => `<option value='${f}' ${f === fieldName ? "selected" : ""}>${f}</option>`).join('')}
+            </select>
+          </td>
+          <td></td>
+        </tr>`;
+      });
+      html += `</table>
+        <button onclick="addRow('${tableId}', '${fieldName}')">Add Course</button>
+        <table id="${tableId}_custom"><tr><th>Course</th><th>Status</th><th>Notes</th><th>Field</th><th>Remove</th></tr></table>`;
+      return html;
     }
 
     let output = "";
